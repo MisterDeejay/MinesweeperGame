@@ -3,68 +3,89 @@
 
 # Tile handles a single tile
 require 'yaml'
+require 'io/console'
 require_relative './board'
 require_relative './tile'
+require_relative './keys'
 
 class Game
+  def initialize
+    @cursor = [0, 0]
+  end
 
   def run
     @board = setup
-    puts @board
+    system('clear')
+    puts @board.to_s(@cursor)
 
     loop do
       status = take_input
-      puts @board
+      system('clear')
+      puts @board.to_s(@cursor)
       if status == false
         break
       end
     end
 
-    # ask for input
-    # => save
-    # => quit
-    # => flag
-    # => reveal
-    # victory
-    # => save times
-    # clean up?
+    clean_up
+  end
+
+  def clean_up
+    # reset terminal colors
+    print "\x1b[0m"
   end
 
   def take_input
-
-    loop do
-      print "(s)ave, (q)uit, (f)lag or (r)eveal? "
-      case gets.chomp
-      when 's'
-        print "Enter filename: "
-        filename = gets.chomp
-        yaml_minesweeper = YAML.dump(@board)
-        File.open(filename+'.yml', 'w') { |f| f.puts(yaml_minesweeper) }
-        break
-      when 'q'
+    case read_char
+    when 'h', '?'
+      puts "(s)ave, (q)uit, (f)lag or (r)eveal? "
+    when 's'
+      puts "Enter filename: "
+      filename = gets.chomp
+      yaml_minesweeper = YAML.dump(@board)
+      File.open(filename+'.yml', 'w') { |f| f.puts(yaml_minesweeper) }
+    when 'q'
+      return false
+    when 'f'
+      @board.flag(@cursor)
+    when 'r', ' '
+      pos = @cursor
+      if @board.reveal(pos) == :lose
+        puts "You lose"
         return false
-      when 'f'
-        print 'coordinates? '
-        pos = gets.chomp.gsub(' ', ',').split(',').map { |x| x.to_i }
-        @board.flag(pos)
-        break
-      when 'r'
-        print 'coordinates? '
-        pos = gets.chomp.gsub(' ', ',').split(',').map { |x| x.to_i }
-        next if pos.length < 2
-        if @board.reveal(pos) == :lose
-          puts "You lose"
-          return false
-        end
-        break
-      else
       end
+    when "\e[A"
+      move_cursor(:up)
+    when "\e[B"
+      move_cursor(:down)
+    when "\e[C"
+      move_cursor(:right)
+    when "\e[D"
+      move_cursor(:left)
+    else
     end
 
     if @board.is_won?
-      # print time taken
+      # puts time taken
       puts "A winner is you"
       return false
+    end
+  end
+
+  def move_cursor(dir)
+    case dir
+    when :up
+      @cursor = [@cursor[0] - 1, @cursor[1]]
+    when :down
+      @cursor = [@cursor[0] + 1, @cursor[1]]
+    when :right
+      @cursor = [@cursor[0], @cursor[1] + 1]
+    when :left
+      @cursor = [@cursor[0], @cursor[1] - 1]
+    end
+    2.times do |i|
+      @cursor[i] = 0 if @cursor[i] < 0
+      @cursor[i] = @board.size - 1 if @cursor[i] >= @board.size
     end
   end
 
@@ -72,17 +93,17 @@ class Game
     yaml_minesweeper = nil
 
     loop do
-      print "[l]oad game or [N]ew game? "
-      case gets.chomp
+      puts "[l]oad game or [N]ew game? "
+      case read_char
       when 'l'
-        print "Enter filename: "
+        puts "Enter filename: "
         filename = gets.chomp
         File.open(filename+'.yml') { |f| yaml_minesweeper = YAML::load(f) }
         break
       when 'n' || ''
-        print "Enter the length of your board (9): "
+        puts "Enter the length of your board (9): "
         board_size = gets.chomp.to_i
-        print "How many bombs do you want to place (18)? "
+        puts "How many bombs do you want to place (18)? "
         num_bombs = gets.chomp.to_i
         board_size = nil if board_size < 2
         num_bombs = nil if num_bombs <= 0

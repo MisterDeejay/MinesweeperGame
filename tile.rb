@@ -9,6 +9,16 @@ class Tile
     [-1,0],
     [-1,-1]
   ]
+  COLOR = {
+    0 => :black,
+    1 => :blue,
+    2 => :green,
+    3 => :light_red,
+    4 => :magenta,
+    5 => :red,
+    6 => :cyan,
+    7 => :black,
+    8 => :grey}
 
   attr_accessor :status
   attr_reader :display
@@ -26,12 +36,12 @@ class Tile
   end
 
   def display
-    return 'F' if @flagged
+    return '⚑'.colorize(:red) if @flagged
     if @revealed
       if @status == 0
         return '_'
       elsif @status.is_a?(Integer)
-        return @status.to_s
+        return @status.to_s.colorize(COLOR[@status])
       else
         return 'X'
       end
@@ -57,6 +67,6 @@ class Tile
   end
 
   def flag
-    @flagged = true
+    @flagged = !@flagged
   end
 end

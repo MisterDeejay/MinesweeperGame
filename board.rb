@@ -1,5 +1,7 @@
+require 'colorize'
+
 class Board
-  attr_accessor :tiles
+  attr_accessor :tiles, :size
 
   def initialize(size = nil, difficulty = nil) # options hash
     # merge defaults hash with options
@@ -50,12 +52,13 @@ class Board
     self[pos].flag
   end
 
-  def to_s
+  def to_s(cursor_pos)
     s = ""
     # @tiles.join("\n")
-    @tiles.each do |row|
-      row.each do |tile|
-        s << tile.display
+    @tiles.each_with_index do |row, i1|
+      row.each_with_index do |tile, i2|
+        s << tile.display.colorize(:background => ([i1, i2] == cursor_pos ? :white : :none),
+          :color => ([i1, i2] == cursor_pos ? :black : :none))
       end
       s << "\n"
     end
